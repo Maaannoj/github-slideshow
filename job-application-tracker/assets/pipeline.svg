@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="90" viewBox="0 0 760 90" font-family="system-ui,Segoe UI,Roboto,sans-serif">
+  <rect width="760" height="90" rx="12" fill="#0f172a"/>
+  <g font-size="13" font-weight="600" text-anchor="middle">
+    <g>
+      <rect x="16"  y="30" width="110" height="30" rx="15" fill="#38bdf8"/>
+      <text x="71"  y="50" fill="#0b1220">Applied</text>
+    </g>
+    <g>
+      <rect x="150" y="30" width="120" height="30" rx="15" fill="#fbbf24"/>
+      <text x="210" y="50" fill="#0b1220">Assessment</text>
+    </g>
+    <g>
+      <rect x="294" y="30" width="110" height="30" rx="15" fill="#f59e0b"/>
+      <text x="349" y="50" fill="#0b1220">Interview</text>
+    </g>
+    <g>
+      <rect x="470" y="30" width="90" height="30" rx="15" fill="#34d399"/>
+      <text x="515" y="50" fill="#0b1220">Offer</text>
+    </g>
+    <g>
+      <rect x="600" y="30" width="110" height="30" rx="15" fill="#f87171"/>
+      <text x="655" y="50" fill="#0b1220">Rejected</text>
+    </g>
+  </g>
+  <g stroke="#334155" stroke-width="2">
+    <line x1="126" y1="45" x2="150" y2="45"/>
+    <line x1="270" y1="45" x2="294" y2="45"/>
+    <line x1="404" y1="45" x2="470" y2="45"/>
+    <line x1="404" y1="45" x2="600" y2="45" stroke-dasharray="3 4"/>
+  </g>
+</svg>

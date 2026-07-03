@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+*.log
+
+# Never commit secrets — these live in the OS user-data dir at runtime,
+# but guard against accidental copies inside the project.
+credentials.json
+token.json
+tokens.json
+*.local.json
