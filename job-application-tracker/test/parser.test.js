@@ -44,6 +44,24 @@ test('classify: offer → offer', () => {
   assert.equal(r.status, 'offer');
 });
 
+test('classify: "moving forward with other candidates" → rejected', () => {
+  const r = classify({
+    subject: 'Your application at Goldman Sachs',
+    from: 'careers@gs.com',
+    snippet: 'After careful consideration we have decided to move forward with other candidates.',
+  });
+  assert.equal(r.status, 'rejected');
+});
+
+test('classify: "will not be progressing" → rejected', () => {
+  const r = classify({
+    subject: 'Update on your candidacy',
+    from: 'talent@company.com',
+    snippet: 'We will not be progressing your application to the next stage.',
+  });
+  assert.equal(r.status, 'rejected');
+});
+
 test('classify: coding assessment → assessment', () => {
   const r = classify({
     subject: 'Complete your coding challenge',

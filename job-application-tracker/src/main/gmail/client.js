@@ -9,12 +9,39 @@ const { google } = require('googleapis');
 
 // Gmail search query that narrows the inbox to likely application mail before we
 // even download it — keeps us well under API quota on large mailboxes.
+//
+// This casts a wide net on purpose: it matches job-specific PHRASES anywhere in
+// the email (subject or body), not just a few subject keywords, plus a broad set
+// of applicant-tracking / job-board sender domains. The classifier downstream is
+// responsible for filtering out anything that slips through that isn't really a
+// job-application email, so we err toward capturing too much here.
 const DEFAULT_QUERY = [
   '(',
-  'subject:(application OR interview OR "your application" OR offer OR candidate OR recruiter OR assessment)',
-  'OR from:(greenhouse.io OR lever.co OR myworkday.com OR ashbyhq.com OR smartrecruiters.com',
-  'OR workable.com OR jobvite.com OR icims.com OR bamboohr.com OR breezy.hr OR recruitee.com',
-  'OR teamtailor.com OR hackerrank.com OR codility.com OR linkedin.com OR indeed.com OR ziprecruiter.com)',
+  // Strong application / status phrases (matched in subject OR body).
+  '"thank you for applying" OR "thanks for applying" OR "thank you for your interest"',
+  'OR "your application" OR "we received your application" OR "application has been received"',
+  'OR "application was received" OR "received your application" OR "application for the"',
+  'OR "your recent application" OR "your recent job application" OR "application status"',
+  'OR "update on your application" OR "your candidacy" OR "your interest in"',
+  // Rejection phrases.
+  'OR "we regret to inform" OR "not to move forward" OR "not be moving forward"',
+  'OR "will not be moving forward" OR "move forward with other" OR "other candidates"',
+  'OR "not been selected" OR "were not selected" OR "position has been filled"',
+  'OR "decided not to proceed" OR "pursue other candidates" OR "unfortunately"',
+  'OR "sorry to see you go"',
+  // Interview / assessment / offer phrases.
+  'OR "schedule an interview" OR "invite you to interview" OR "phone screen"',
+  'OR "next steps" OR "coding challenge" OR "online assessment" OR "take-home"',
+  'OR "pleased to offer" OR "offer of employment" OR "we are excited to offer"',
+  // Broad subject keywords as a backstop.
+  'OR subject:(application OR interview OR candidate OR recruiter OR assessment OR "job application")',
+  // Applicant-tracking systems and job boards (sender domains).
+  'OR from:(greenhouse.io OR lever.co OR myworkday.com OR myworkdayjobs.com OR ashbyhq.com',
+  'OR smartrecruiters.com OR workable.com OR jobvite.com OR icims.com OR bamboohr.com',
+  'OR breezy.hr OR recruitee.com OR teamtailor.com OR hackerrank.com OR codility.com',
+  'OR hackerearth.com OR linkedin.com OR indeed.com OR indeedemail.com OR ziprecruiter.com',
+  'OR glassdoor.com OR wellfound.com OR successfactors.com OR taleo.net OR eightfold.ai',
+  'OR phenompeople.com OR avature.net OR oraclecloud.com OR paylocity.com OR dayforcehcm.com)',
   ')',
 ].join(' ');
 

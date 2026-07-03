@@ -53,7 +53,14 @@ module.exports = {
   getLastSync: () => store.get('lastSync', null),
   setLastSync: (ts) => store.set('lastSync', ts),
 
-  getSettings: () => store.get('settings', { newerThanDays: 180, maxResults: 300 }),
+  // The scan window and result cap are fixed in code (there is no UI to change
+  // them) so that updating the app always applies the latest values, even if an
+  // older, narrower setting was already persisted on disk. Only `account` is
+  // remembered from the stored object.
+  getSettings: () => {
+    const stored = store.get('settings', {});
+    return { newerThanDays: 730, maxResults: 500, account: stored.account || null };
+  },
   setSettings: (s) => store.set('settings', s),
 
   // Full reset (sign out + forget everything).
