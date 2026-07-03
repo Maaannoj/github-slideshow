@@ -1,0 +1,61 @@
+name: Build desktop installer
+
+# Builds the Job Application Tracker Windows installer on a real Windows runner
+# and publishes it to a GitHub Release named "desktop-latest" so it can be
+# downloaded with one click.
+
+on:
+  push:
+    branches: [claude/job-app-tracker-desktop-im7ey1]
+    paths:
+      - 'job-application-tracker/**'
+      - '.github/workflows/build-desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: job-application-tracker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Windows installer
+        run: npm run build
+
+      - name: List build output
+        shell: bash
+        run: ls -la dist || dir dist
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JobApplicationTracker-Windows-Setup
+          path: job-application-tracker/dist/*.exe
+          if-no-files-found: error
+
+      - name: Publish to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete desktop-latest --yes --repo "$GITHUB_REPOSITORY" || true
+          gh release create desktop-latest dist/*.exe \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_REF_NAME" \
+            --title "Job Application Tracker — Desktop installer" \
+            --notes "Windows installer for the Job Application Tracker desktop app. Download the .exe below and run it. Windows may show a 'Windows protected your PC' warning — click 'More info' then 'Run anyway'. After installing, follow the one-time Google setup in the app to connect your Gmail."

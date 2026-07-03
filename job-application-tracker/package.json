@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "Desktop app that connects to your Gmail and automatically tracks the status of your job applications.",
   "main": "src/main/main.js",
-  "author": "",
+  "author": "Job Application Tracker",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
     "test": "node --test test/*.test.js",
-    "build": "electron-builder"
+    "build": "electron-builder --publish never"
   },
   "build": {
     "appId": "com.local.jobapplicationtracker",
@@ -19,8 +19,17 @@
       "assets/**/*",
       "package.json"
     ],
-    "mac": { "category": "public.app-category.productivity" },
+    "artifactName": "JobApplicationTracker-Setup-${version}.${ext}",
+    "mac": { "category": "public.app-category.productivity", "target": "dmg" },
     "win": { "target": "nsis" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Job Application Tracker"
+    },
     "linux": { "target": "AppImage" }
   },
   "dependencies": {
@@ -28,6 +37,7 @@
     "googleapis": "^144.0.0"
   },
   "devDependencies": {
-    "electron": "^31.0.0"
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
   }
 }
