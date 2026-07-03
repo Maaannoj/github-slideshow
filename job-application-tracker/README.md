@@ -11,6 +11,20 @@ deletes, or modifies any mail.
 
 ![status pipeline](assets/pipeline.svg)
 
+## Features
+
+- **Dashboard** — animated stat tiles, a filterable/sortable application list, and
+  "time to follow up" nudges for applications that have gone quiet.
+- **Kanban board** — drag any application between stages to override the detected
+  status; your manual changes are remembered across syncs.
+- **Detail drawer** — click any application for its full email timeline, editable
+  status, private notes, pin/archive, and a one-click "Open in Gmail".
+- **Analytics** — pipeline funnel, status breakdown donut, applications-over-time,
+  and KPIs (response rate, interview rate, offer rate, avg. time to reply).
+- **Automatic background sync** with **desktop notifications** when an application
+  changes status (new interview, offer, rejection…).
+- **Light / dark theme**, **CSV export**, and a keyboard-friendly, fully local app.
+
 ---
 
 ## How it works

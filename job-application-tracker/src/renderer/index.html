@@ -1,90 +1,103 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"
     />
     <title>Job Application Tracker</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="app">
-      <!-- Onboarding / setup screen -->
-      <section id="setup" class="screen">
-        <div class="setup-card">
-          <h1>📮 Job Application Tracker</h1>
-          <p class="sub">
-            Connect your work Gmail once. The app scans for job-application emails and keeps a live
-            board of where each application stands.
-          </p>
+    <!-- ============ SETUP / ONBOARDING ============ -->
+    <section id="setup" class="setup hidden">
+      <div class="setup-card">
+        <div class="setup-logo">📮</div>
+        <h1>Job Application Tracker</h1>
+        <p class="sub">
+          Connect your work Gmail once. The app scans for job-application emails and keeps a live
+          board of exactly where each application stands — automatically.
+        </p>
 
-          <ol class="steps">
-            <li id="step-creds" class="step">
-              <div class="step-head"><span class="dot"></span> Import Google credentials</div>
+        <ol class="steps">
+          <li id="step-creds" class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Import Google credentials</div>
               <p>
-                A one-time setup so the app can read <em>your</em> inbox securely. Follow the
-                <a href="#" id="open-guide">setup guide</a> to download a
-                <code>credentials.json</code> from Google Cloud, then import it here.
+                A one-time setup so the app can read <em>your</em> inbox securely.
+                <a href="#" id="open-guide">Open the setup guide</a>, download a
+                <code>credentials.json</code>, then import it here.
               </p>
               <button id="btn-import" class="btn">Import credentials.json…</button>
-              <span id="creds-ok" class="badge hidden">✓ Imported</span>
-            </li>
-            <li id="step-connect" class="step disabled">
-              <div class="step-head"><span class="dot"></span> Connect Gmail</div>
+              <span id="creds-ok" class="pill-ok hidden">✓ Imported</span>
+            </div>
+          </li>
+          <li id="step-connect" class="step is-locked">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Connect Gmail</div>
               <p>Sign in with Google and grant read-only mail access.</p>
               <button id="btn-connect" class="btn primary" disabled>Connect Gmail</button>
-            </li>
-          </ol>
-          <p id="setup-error" class="error hidden"></p>
-        </div>
-      </section>
+            </div>
+          </li>
+        </ol>
+        <p id="setup-error" class="error hidden"></p>
+      </div>
+    </section>
 
-      <!-- Dashboard -->
-      <section id="dashboard" class="screen hidden">
+    <!-- ============ MAIN APP ============ -->
+    <div id="app" class="app hidden">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">📮</span><span class="brand-text">Job Tracker</span></div>
+        <nav class="nav">
+          <button class="nav-item active" data-view="dashboard"><span class="nav-ico">◲</span> Dashboard</button>
+          <button class="nav-item" data-view="board"><span class="nav-ico">▤</span> Board</button>
+          <button class="nav-item" data-view="analytics"><span class="nav-ico">◕</span> Analytics</button>
+          <button class="nav-item" data-view="settings"><span class="nav-ico">⚙</span> Settings</button>
+        </nav>
+        <div class="sidebar-foot">
+          <button id="btn-sync" class="btn primary sync-btn"><span class="sync-ico">↻</span> Sync now</button>
+          <div class="acct">
+            <div class="acct-dot"></div>
+            <div class="acct-meta">
+              <div id="acct-email" class="acct-email">—</div>
+              <div id="acct-sync" class="acct-sync">not synced</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="main">
         <header class="topbar">
-          <div class="brand">📮 <span>Job Application Tracker</span></div>
-          <div class="topbar-right">
-            <span id="account" class="account"></span>
-            <button id="btn-sync" class="btn primary">↻ Sync now</button>
-            <button id="btn-menu" class="btn ghost" title="Sign out">⋯</button>
+          <h2 id="view-title" class="view-title">Dashboard</h2>
+          <div class="topbar-actions">
+            <div class="search-wrap">
+              <span class="search-ico">⌕</span>
+              <input id="search" type="search" placeholder="Search company, role…" />
+            </div>
+            <button id="btn-theme" class="icon-btn" title="Toggle light / dark">◐</button>
           </div>
         </header>
 
-        <div class="statbar" id="statbar"></div>
-
-        <div class="toolbar">
-          <input id="search" type="search" placeholder="Search company or role…" />
-          <div class="filters" id="filters"></div>
-          <span id="last-sync" class="last-sync"></span>
+        <div id="views" class="views">
+          <section id="view-dashboard" class="view"></section>
+          <section id="view-board" class="view hidden"></section>
+          <section id="view-analytics" class="view hidden"></section>
+          <section id="view-settings" class="view hidden"></section>
         </div>
+      </main>
 
-        <div id="board" class="board"></div>
-        <div id="empty" class="empty hidden">
-          <p>No job applications found yet.</p>
-          <p class="muted">Hit <strong>Sync now</strong> to scan your inbox.</p>
-        </div>
-      </section>
-
-      <div id="toast" class="toast hidden"></div>
+      <!-- Detail drawer -->
+      <div id="drawer-scrim" class="drawer-scrim hidden"></div>
+      <aside id="drawer" class="drawer hidden" aria-hidden="true"></aside>
     </div>
 
-    <template id="app-row">
-      <div class="app-card">
-        <div class="app-main">
-          <div class="app-company"></div>
-          <div class="app-role"></div>
-          <div class="app-subject"></div>
-        </div>
-        <div class="app-meta">
-          <span class="status-pill"></span>
-          <span class="app-date"></span>
-          <span class="app-count"></span>
-        </div>
-      </div>
-    </template>
+    <div id="toast" class="toast hidden"></div>
 
     <script src="renderer.js"></script>
   </body>

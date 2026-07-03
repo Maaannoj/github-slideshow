@@ -5,7 +5,7 @@ const assert = require('node:assert');
 
 const { classify } = require('../src/main/parser/classifier');
 const { extract } = require('../src/main/parser/extractor');
-const { aggregate, pickStatus } = require('../src/main/parser/aggregate');
+const { aggregate, pickStatus, diffStatuses } = require('../src/main/parser/aggregate');
 
 test('classify: application confirmation → applied', () => {
   const r = classify({
@@ -147,6 +147,41 @@ test('aggregate: groups a multi-email pipeline into one record at latest stage',
   assert.equal(acme.emailCount, 2);
   // sorted most-recent first
   assert.equal(apps[0].company, acme.company);
+});
+
+test('aggregate: manual override wins over detected status and is kept', () => {
+  const emails = [
+    { id: '1', subject: 'Thanks for applying to Acme', from: 'jobs@acme.com', snippet: 'received your application', date: 1000 },
+  ];
+  const overrides = { acme: { manualStatus: 'interview', notes: 'call fri', pinned: true } };
+  const [app] = aggregate(emails, overrides);
+  assert.equal(app.autoStatus, 'applied');
+  assert.equal(app.status, 'interview');
+  assert.equal(app.manualStatus, 'interview');
+  assert.equal(app.notes, 'call fri');
+  assert.equal(app.pinned, true);
+});
+
+test('aggregate: reachedStages records every stage seen', () => {
+  const emails = [
+    { id: '1', subject: 'Thanks for applying to Globex', from: 'jobs@globex.com', snippet: 'received your application', date: 1000 },
+    { id: '2', subject: 'Interview with Globex', from: 'jobs@globex.com', snippet: 'schedule a call', date: 2000 },
+  ];
+  const [app] = aggregate(emails);
+  assert.ok(app.reachedStages.includes('applied'));
+  assert.ok(app.reachedStages.includes('interview'));
+});
+
+test('diffStatuses: reports only notable new changes', () => {
+  const prev = [{ key: 'acme', autoStatus: 'applied' }];
+  const next = [
+    { key: 'acme', company: 'Acme', autoStatus: 'interview' },
+    { key: 'new', company: 'NewCo', autoStatus: 'applied' },
+  ];
+  const changes = diffStatuses(prev, next);
+  assert.equal(changes.length, 1);
+  assert.equal(changes[0].company, 'Acme');
+  assert.equal(changes[0].to, 'interview');
 });
 
 test('aggregate: rejection after interview marks rejected', () => {

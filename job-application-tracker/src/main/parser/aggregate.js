@@ -2,7 +2,8 @@
 
 /**
  * Aggregates a stream of classified emails into one record per application
- * (keyed by company + role), resolving the "current" status.
+ * (keyed by company), resolving the "current" status and merging any persisted
+ * user overrides (manual status, notes, pin, archive).
  */
 
 const { classify, STAGES } = require('./classifier');
@@ -45,10 +46,12 @@ function pickStatus(current, incoming) {
 }
 
 /**
- * @param {Array<{id?:string, subject?:string, from?:string, snippet?:string, body?:string, date?:number, threadId?:string}>} emails
+ * @param {Array<object>} emails normalized emails
+ * @param {Object<string,object>} [overrides] per-application user overrides keyed
+ *        by normalized company: { manualStatus, notes, archived, pinned }
  * @returns {Array<object>} one record per application, most-recently-active first
  */
-function aggregate(emails = []) {
+function aggregate(emails = [], overrides = {}) {
   const apps = new Map();
 
   for (const email of emails) {
@@ -60,6 +63,7 @@ function aggregate(emails = []) {
     // email, so folding role into the key fragments one application into
     // several cards. Role is enriched below when any email reveals it.
     const key = normalizeKey(company);
+    if (!key) continue;
 
     const date = Number(email.date) || 0;
     const signal = {
@@ -68,6 +72,7 @@ function aggregate(emails = []) {
       confidence: result.confidence,
       subject: email.subject || '',
       emailId: email.id || null,
+      threadId: email.threadId || null,
     };
 
     const existing = apps.get(key);
@@ -76,12 +81,13 @@ function aggregate(emails = []) {
         key,
         company,
         role: role || null,
-        status: result.status,
+        autoStatus: result.status,
         confidence: result.confidence,
         firstSeen: date,
         lastUpdate: date,
         emailCount: 1,
         latestSubject: email.subject || '',
+        latestThreadId: signal.threadId,
         history: [signal],
       });
       continue;
@@ -94,22 +100,66 @@ function aggregate(emails = []) {
     if (!existing.role && role) existing.role = role;
 
     const winner = pickStatus(
-      { status: existing.status, date: existing.lastUpdate },
+      { status: existing.autoStatus, date: existing.lastUpdate },
       { status: result.status, date }
     );
-    // Update status/confidence and the "last update" timestamp to the winner's.
-    existing.status = winner.status;
-    existing.lastUpdate = Math.max(existing.lastUpdate, date);
-    if (date >= existing.lastUpdate - 1) {
+    existing.autoStatus = winner.status;
+    if (date >= existing.lastUpdate) {
+      existing.lastUpdate = date;
       existing.latestSubject = email.subject || existing.latestSubject;
+      existing.latestThreadId = signal.threadId || existing.latestThreadId;
     }
     existing.confidence = Math.max(existing.confidence, result.confidence);
   }
 
   const records = [...apps.values()];
-  for (const r of records) r.history.sort((a, b) => a.date - b.date);
-  records.sort((a, b) => b.lastUpdate - a.lastUpdate);
+  for (const r of records) {
+    r.history.sort((a, b) => a.date - b.date);
+
+    // Furthest pipeline stage this application ever reached (for the funnel).
+    let furthest = -1;
+    const reached = new Set();
+    for (const h of r.history) {
+      reached.add(h.status);
+      furthest = Math.max(furthest, STAGE_RANK[h.status] ?? -1);
+    }
+    r.reachedStages = [...reached];
+    r.furthestStage = STAGES[furthest] || r.autoStatus;
+
+    // Merge persisted user override. A manual status wins over the detected one.
+    const ov = overrides[r.key] || {};
+    r.notes = ov.notes || '';
+    r.archived = !!ov.archived;
+    r.pinned = !!ov.pinned;
+    r.manualStatus = ov.manualStatus || null;
+    r.status = ov.manualStatus || r.autoStatus;
+  }
+
+  // Pinned first, then most recently active.
+  records.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return b.lastUpdate - a.lastUpdate;
+  });
   return records;
 }
 
-module.exports = { aggregate, pickStatus, normalizeKey };
+/**
+ * Compare two application lists and return the meaningful status changes
+ * (used to fire desktop notifications after a sync).
+ * @returns {Array<{company:string, from:(string|null), to:string}>}
+ */
+function diffStatuses(previous = [], next = []) {
+  const prevMap = new Map(previous.map((a) => [a.key, a.autoStatus || a.status]));
+  const notable = new Set(['assessment', 'interview', 'offer', 'rejected']);
+  const changes = [];
+  for (const app of next) {
+    const before = prevMap.get(app.key) || null;
+    const after = app.autoStatus || app.status;
+    if (after !== before && notable.has(after)) {
+      changes.push({ company: app.company, from: before, to: after });
+    }
+  }
+  return changes;
+}
+
+module.exports = { aggregate, pickStatus, normalizeKey, diffStatuses };

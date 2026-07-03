@@ -53,21 +53,44 @@ module.exports = {
   getLastSync: () => store.get('lastSync', null),
   setLastSync: (ts) => store.set('lastSync', ts),
 
-  // The scan window and result cap are fixed in code (there is no UI to change
-  // them) so that updating the app always applies the latest values, even if an
-  // older, narrower setting was already persisted on disk. Only `account` is
-  // remembered from the stored object.
+  // The scan window and result cap are fixed in code so that updating the app
+  // always applies the latest values, even if an older, narrower setting was
+  // already persisted on disk. User-tunable preferences (account, theme,
+  // auto-sync, stale threshold) are read from and written back to the store.
   getSettings: () => {
     const stored = store.get('settings', {});
-    return { newerThanDays: 730, maxResults: 500, account: stored.account || null };
+    return {
+      newerThanDays: 730,
+      maxResults: 500,
+      account: stored.account || null,
+      theme: stored.theme || 'dark',
+      autoSyncMinutes: Number.isFinite(stored.autoSyncMinutes) ? stored.autoSyncMinutes : 60,
+      notifications: stored.notifications !== false,
+      staleDays: Number.isFinite(stored.staleDays) ? stored.staleDays : 14,
+    };
   },
-  setSettings: (s) => store.set('settings', s),
+  setSettings: (partial) => {
+    const stored = store.get('settings', {});
+    store.set('settings', { ...stored, ...partial });
+    return store.get('settings');
+  },
 
-  // Full reset (sign out + forget everything).
+  // Per-application user overrides, keyed by normalized company:
+  //   { manualStatus, notes, archived, pinned }
+  getOverrides: () => store.get('overrides', {}),
+  setOverride: (key, partial) => {
+    const all = store.get('overrides', {});
+    all[key] = { ...(all[key] || {}), ...partial };
+    store.set('overrides', all);
+    return all[key];
+  },
+
+  // Full reset (sign out + forget everything except the imported credentials).
   reset: () => {
     store.delete('tokens');
     store.delete('applications');
     store.delete('lastSync');
+    store.delete('overrides');
   },
   _store: store,
 };
