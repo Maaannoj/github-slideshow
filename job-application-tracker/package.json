@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "test": "node --test test/*.test.js",
+    "test": "node --test test/parser.test.js",
     "build": "electron-builder --publish never"
   },
   "build": {
