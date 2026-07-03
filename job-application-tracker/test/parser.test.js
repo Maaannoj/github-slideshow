@@ -71,6 +71,43 @@ test('classify: coding assessment → assessment', () => {
   assert.equal(r.status, 'assessment');
 });
 
+test('classify: forex order failure is NOT job-related', () => {
+  const r = classify({
+    subject: 'Unable to process Forex order - FX787386030583',
+    from: 'noreply@bookmyforex.com',
+    snippet: 'Unfortunately we were unable to process your forex order.',
+  });
+  assert.equal(r.isJobRelated, false);
+});
+
+test('classify: e-Visa notification is NOT job-related', () => {
+  const r = classify({
+    subject: '[No-Reply] Notification from Vietnam e-Visa',
+    from: 'noreply@evisa.gov.vn',
+    snippet: 'Your e-visa application has been received.',
+  });
+  assert.equal(r.isJobRelated, false);
+});
+
+test('classify: bank OTP is NOT job-related', () => {
+  const r = classify({
+    subject: 'Your OTP for transaction',
+    from: 'alerts@hdfcbank.com',
+    snippet: 'Your one-time password is 123456 for a payment of INR 5000.',
+  });
+  assert.equal(r.isJobRelated, false);
+});
+
+test('classify: real application via Keka is job-related', () => {
+  const r = classify({
+    subject: 'Application for Senior Executive - Category Operations received',
+    from: 'Acme Retail via Keka <no-reply@kekamail.com>',
+    snippet: 'Thank you for applying. Your application has been received.',
+  });
+  assert.equal(r.isJobRelated, true);
+  assert.equal(r.status, 'applied');
+});
+
 test('classify: newsletter is not job-related', () => {
   const r = classify({
     subject: 'Your weekly deals are here',
@@ -95,6 +132,31 @@ test('extract: company from real sender domain', () => {
     from: 'Jane <jane@figma.com>',
   });
   assert.equal(company, 'Figma');
+});
+
+test('extract: job title is never used as the company', () => {
+  const { company, role } = extract({
+    subject: 'Your recent job application for Manager - Project Implementation',
+    from: 'no-reply@kekamail.com',
+  });
+  assert.notEqual(company.toLowerCase(), 'manager');
+  assert.equal(company, 'Unknown company');
+});
+
+test('extract: "Company via ATS" display name yields the company', () => {
+  const { company } = extract({
+    subject: 'Application received',
+    from: 'Stripe via Greenhouse <no-reply@greenhouse.io>',
+  });
+  assert.match(company, /Stripe/);
+});
+
+test('extract: country name is never the company', () => {
+  const { company } = extract({
+    subject: 'Notification from Vietnam',
+    from: 'Vietnam <no-reply@service.vn>',
+  });
+  assert.notEqual(company.toLowerCase(), 'vietnam');
 });
 
 test('extract: role detection', () => {

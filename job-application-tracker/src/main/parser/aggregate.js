@@ -62,8 +62,12 @@ function aggregate(emails = [], overrides = {}) {
     // Key on company only. A single application rarely names the role in every
     // email, so folding role into the key fragments one application into
     // several cards. Role is enriched below when any email reveals it.
-    const key = normalizeKey(company);
-    if (!key) continue;
+    let key = normalizeKey(company);
+    // "Unknown company" emails must NOT all collapse into one card — key them by
+    // thread so replies group but unrelated unknowns stay separate.
+    if (!key || key === 'unknowncompany') {
+      key = 'unknown-' + (email.threadId || email.id || Math.random().toString(36).slice(2));
+    }
 
     const date = Number(email.date) || 0;
     const signal = {
@@ -112,7 +116,9 @@ function aggregate(emails = [], overrides = {}) {
     existing.confidence = Math.max(existing.confidence, result.confidence);
   }
 
-  const records = [...apps.values()];
+  // Confidence floor — drop anything that only ever matched the weakest signal.
+  const MIN_CONFIDENCE = 0.5;
+  const records = [...apps.values()].filter((r) => r.confidence >= MIN_CONFIDENCE);
   for (const r of records) {
     r.history.sort((a, b) => a.date - b.date);
 
